@@ -1,0 +1,14 @@
+[Endpoint]
+/xyz/abc
+
+[ReturnStatus]
+200
+
+[ReturnHeaders]
+Content-Type: application/json
+X-Custom: mockpinetest
+
+[ReturnBody]
+{
+  "message": "denemeeeee!"
+}
