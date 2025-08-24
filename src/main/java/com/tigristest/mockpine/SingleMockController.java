@@ -20,11 +20,11 @@ import jakarta.servlet.http.HttpServletRequest;
 public class SingleMockController {
 
     private static final String MOCK_FILE = "mocks/single_mock.txt";
-    private Map<String, String> config = new HashMap<>();
+    private Map<String, String> parsedMockFileContent = new HashMap<>();
 
     public SingleMockController() {
         loadMockFile();
-        System.out.println("Config is : " + config);
+        System.out.println("Mock file content is : \n" + parsedMockFileContent);
     }
 
     private void loadMockFile() {
@@ -38,7 +38,7 @@ public class SingleMockController {
                 if (line.startsWith("[") && line.endsWith("]")) {
                     // save previous section
                     if (currentSection != null) {
-                        config.put(currentSection, buffer.toString().trim());
+                        parsedMockFileContent.put(currentSection, buffer.toString().trim());
                         buffer.setLength(0);
                     }
                     currentSection = line.substring(1, line.length() - 1);
@@ -47,7 +47,7 @@ public class SingleMockController {
                 }
             }
             if (currentSection != null) {
-                config.put(currentSection, buffer.toString().trim());
+                parsedMockFileContent.put(currentSection, buffer.toString().trim());
             }
 
         } catch (IOException e) {
@@ -58,14 +58,14 @@ public class SingleMockController {
     @RequestMapping("/single/**")
     public ResponseEntity<String> mock(HttpServletRequest request) {
         String requestPath = request.getRequestURI(); // e.g. /mock/my/service
-        String endpoint = config.getOrDefault("Endpoint", "").trim();
-        
+        String endpoint = parsedMockFileContent.getOrDefault("Endpoint", "").trim();
+
         // Ensure endpoint starts with "/"
         if (!endpoint.startsWith("/")) {
             endpoint = "/" + endpoint;
         }
 
-        String expectedPath = "/mock" + endpoint;
+        String expectedPath = "/single" + endpoint;
         // If endpoint doesn't match, return 404
         if (!requestPath.equals(expectedPath)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No mock defined for: " + requestPath);
@@ -73,14 +73,14 @@ public class SingleMockController {
 
         // Status
         int status = HttpStatus.OK.value();
-        if (config.containsKey("ReturnStatus")) {
-            status = Integer.parseInt(config.get("ReturnStatus").trim());
+        if (parsedMockFileContent.containsKey("ReturnStatus")) {
+            status = Integer.parseInt(parsedMockFileContent.get("ReturnStatus").trim());
         }
 
         // Headers
         HttpHeaders headers = new HttpHeaders();
-        if (config.containsKey("ReturnHeaders")) {
-            String[] headerLines = config.get("ReturnHeaders").split("\n");
+        if (parsedMockFileContent.containsKey("ReturnHeaders")) {
+            String[] headerLines = parsedMockFileContent.get("ReturnHeaders").split("\n");
             for (String h : headerLines) {
                 if (h.contains(":")) {
                     String[] kv = h.split(":", 2);
@@ -90,7 +90,7 @@ public class SingleMockController {
         }
 
         // Body
-        String body = config.getOrDefault("ReturnBody", "");
+        String body = parsedMockFileContent.getOrDefault("ReturnBody", "");
 
         return new ResponseEntity<>(body, headers, HttpStatus.valueOf(status));
     }
